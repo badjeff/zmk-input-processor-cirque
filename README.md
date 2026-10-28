@@ -36,7 +36,7 @@ manifest:
     - name: zmk-input-processor-cirque
       remote: badjeff
       revision: main
-		# optional haptic feedback driver
+    # optional haptic feedback driver
     - name: zmk-drv2605-driver
       remote: badjeff
       revision: main
@@ -54,29 +54,29 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
 	spi2_default: spi2_default {
 		group1 {
 			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
-							<NRF_PSEL(SPIM_MOSI, 1, 15)>,
-							<NRF_PSEL(SPIM_MISO, 1, 14)>;
+                    <NRF_PSEL(SPIM_MOSI, 1, 15)>,
+                    <NRF_PSEL(SPIM_MISO, 1, 14)>;
 		};
 	};
 	spi2_sleep: spi2_sleep {
 		group1 {
 			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
-							<NRF_PSEL(SPIM_MOSI, 1, 15)>,
-							<NRF_PSEL(SPIM_MISO, 1, 14)>;
+                    <NRF_PSEL(SPIM_MOSI, 1, 15)>,
+                    <NRF_PSEL(SPIM_MISO, 1, 14)>;
 			low-power-enable;
 		};
 	};
 	i2c1_default: i2c1_default {
 		group1 {
 			psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
-							<NRF_PSEL(TWIM_SCL, 0, 5)>;
+                    <NRF_PSEL(TWIM_SCL, 0, 5)>;
 		};
 	};
 
 	i2c1_sleep: i2c1_sleep {
 		group1 {
 			psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
-							<NRF_PSEL(TWIM_SCL, 0, 5)>;
+                    <NRF_PSEL(TWIM_SCL, 0, 5)>;
 			low-power-enable;
 		};
 	};
@@ -89,88 +89,88 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
 };
 
 &spi2 {
-	compatible = "nordic,nrf-spim";
-	status = "disabled"; // <<< disabled in main .dtsi, okay in .overlay
-	tpad0: glidepoint@0 {
-		compatible = "cirque,pinnacle";
-		status = "disabled";
-		label = "TOUCHPAD0";
-		reg = <0>;
-		spi-max-frequency = <4000000>;
-	};
+  compatible = "nordic,nrf-spim";
+  status = "disabled"; // <<< disabled in main .dtsi, okay in .overlay
+  tpad0: glidepoint@0 {
+    compatible = "cirque,pinnacle";
+    status = "disabled";
+    label = "TOUCHPAD0";
+    reg = <0>;
+    spi-max-frequency = <4000000>;
+  };
 };
 
 // Config custom gpios
 &spi2 {
   status = "okay";
-	pinctrl-0 = <&spi2_default>;
-	pinctrl-1 = <&spi2_sleep>;
-	pinctrl-names = "default", "sleep";
-	cs-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
+  pinctrl-0 = <&spi2_default>;
+  pinctrl-1 = <&spi2_sleep>;
+  pinctrl-names = "default", "sleep";
+  cs-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
 };
 
 &tpad0 {
   status = "okay";
-	data-ready-gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>;
-	sleep-mode-enable;
-	sensitivity = "2x";
-	data-mode = "absolute";
+  data-ready-gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>;
+  sleep-mode-enable;
+  sensitivity = "2x";
+  data-mode = "absolute";
 };
 
 &i2c1 {
-	status = "okay";
-	compatible = "nordic,nrf-twim";
-	pinctrl-0 = <&i2c1_default>;
-	pinctrl-1 = <&i2c1_sleep>;
-	pinctrl-names = "default", "sleep";
+  status = "okay";
+  compatible = "nordic,nrf-twim";
+  pinctrl-0 = <&i2c1_default>;
+  pinctrl-1 = <&i2c1_sleep>;
+  pinctrl-names = "default", "sleep";
 
-	drv2605_0: drv2605@5a {
-		compatible = "ti,drv2605-alt";
-		reg = <0x5a>;
-		library = <6>; /* Library to use, 0 = Empty, 1-5 are ERM, 6 is LRA. */
-		standby-ms = <1000>; /* switch to standby mode after idling for 1000ms */
-	};
+  drv2605_0: drv2605@5a {
+    compatible = "ti,drv2605-alt";
+    reg = <0x5a>;
+    library = <6>; /* Library to use, 0 = Empty, 1-5 are ERM, 6 is LRA. */
+    standby-ms = <1000>; /* switch to standby mode after idling for 1000ms */
+  };
 };
 
 /{
-	gpio_drv2605_0: gpio_drv2605_0 {
-		compatible = "ti,drv2605-alt-gpio";
-		status = "okay";
-		gpio-controller;
-		#gpio-cells = <2>;
-		dev-reg = <0x5a>;
-	};
-	gpio_drv2605_1: gpio_drv2605_1 {
-		compatible = "ti,drv2605-alt-gpio";
-		status = "okay";
-		gpio-controller;
-		#gpio-cells = <2>;
-		dev-reg = <0x5a>;
-	};
-	gpio_drv2605_2: gpio_drv2605_2 {
-		compatible = "ti,drv2605-alt-gpio";
-		status = "okay";
-		gpio-controller;
-		#gpio-cells = <2>;
-		dev-reg = <0x5a>;
-	};
+  gpio_drv2605_0: gpio_drv2605_0 {
+    compatible = "ti,drv2605-alt-gpio";
+    status = "okay";
+    gpio-controller;
+    #gpio-cells = <2>;
+    dev-reg = <0x5a>;
+  };
+  gpio_drv2605_1: gpio_drv2605_1 {
+    compatible = "ti,drv2605-alt-gpio";
+    status = "okay";
+    gpio-controller;
+    #gpio-cells = <2>;
+    dev-reg = <0x5a>;
+  };
+  gpio_drv2605_2: gpio_drv2605_2 {
+    compatible = "ti,drv2605-alt-gpio";
+    status = "okay";
+    gpio-controller;
+    #gpio-cells = <2>;
+    dev-reg = <0x5a>;
+  };
 };
 
 #include <input/processors/cirque.dtsi>
 
 &zip_cirque {
-	feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>;
-	feedback-edge-scroll-start-ms = <5>;
+  feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>;
+  feedback-edge-scroll-start-ms = <5>;
 
-	feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_1 0 9>;
-	feedback-edge-scroll-trigger-ms = <2>;
+  feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_1 0 9>;
+  feedback-edge-scroll-trigger-ms = <2>;
 
-	/* Enable haptic feedback on touching/gliding
-	 * (Steam Deck / Steam Controller favor)
-	 */
-	feedback-glide-gpios = <&gpio_drv2605_2 0 9>;
-	feedback-glide-ms = <2>;
-	feedback-glide-interval-ms = <25>;
+  /* Enable haptic feedback on touching/gliding
+   * (Steam Deck / Steam Controller favor)
+   */
+  feedback-glide-gpios = <&gpio_drv2605_2 0 9>;
+  feedback-glide-ms = <2>;
+  feedback-glide-interval-ms = <25>;
 };
 ```
 
