@@ -1,23 +1,25 @@
-# Input Processor for Cirque GlidePoint (Pinnacle) touchpad
+# Input Processor for Cirque GlidePoint (Pinnacle) Touchpad
 
-Input processor for the Cirque GlidePoint (Pinnacle) touchpad: converts absolute
+This module is a special brain upgrade for a round mini touchpad on a custom keyboard. It takes your finger touches and turns them into decent mouse.
+
+## What it does
+
+It processes the input reports from Zephyr's `cirque,pinnacle` touchpad driver. Converts absolute
 touch coordinates to relative cursor output, with an edge-scroll ring emitting
 wheel output, primary/secondary tap detection, inertial glide, and haptic
 feedback pulses driven on gpio pins (e.g. the [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) wrapper).
 
-## Features
+### Feature Highlights
 
-- Compatible with Zephyr upstream `cirque,pinnacle` driver.
-- Absolute-to-relative cursor output from the touchpad report
-- Edge-scroll ring: the pad rim is split into angular segments, each segment crossing emits one wheel tick (`REL_WHEEL`)
-- Hold-on-edge gesture qualification: rim touches must hold within a drift threshold before wheel output starts (`edge-scroll-gesture-delay-ms` / `edge-scroll-gesture-delay-drift`)
-- Primary / secondary tap detection with configurable duration and drift thresholds (`tap-max-ms` / `tap-max-drift`); secondary tap via the edge-scroll ring as mouse right click
-- Tap-drag: a fast tap followed by a swift re-touch that holds on the same spot presses the mouse button after the hold window, turning the hold into a drag; a quick lift completes the next (double/triple) click without pulsing (`tap-drag-disable` / `tap-drag-window-ms` / `tap-drag-drift` / `tap-drag-hold-start-ms`)
-- Inertial glide: flick then coast on release, with per-tick velocity decay and a minimum release velocity (`inertial-decay-pct` / `inertial-start-velocity`)
-- Optional per-event haptic feedback pulses on GPIO pins, i2c-backed pins like the [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) shim supported; pulses are played off the input thread, one pin per pulse source (scroll-start / scroll-trigger / glide)
-- Glide feedback throttling (`feedback-glide-interval-ms`)
-- Rate limited report sync for cursor (`sync-rel-xy-ms`) and scroll wheel (`sync-rel-v-ms`) deltas
-- Finger-lift filter: pads that keep reporting as contact strength drains are pre-processed, and lift-tail frames whose Z fell below the session Z average are swallowed before movement or gesture detection (`lift-filter-pct`)
+*   **Precise Pointer:** It detects finger-lift trailing frames, swallows phantom inputs caused by wireless peripheral without wired grounding.
+*   **Circular Scroll:** The very outer edge of the circle acts like a scrolling rim. If you trace your finger around the rim, it scrolls like a mouse wheel. Once scroll gesture mode on, you can spin your finger all over the pad, adjust the scroll speed by circling closer or further to the center.
+*   **Tap to Click:** If you tap quickly with your finger, it clicks the left mouse button. If you tap on the outer edge, it performs a right-click.
+*   **Tap-Tap and Drag:** If you tap quickly and then put your finger right back down to hold it, it "grabs" whatever is on the screen so you can highlight text.
+*   **Inertial Glide:** If you flick your finger and let go, the mouse cursor doesn't stop instantly, it smoothly glides and coasts to a stop, just like cursor sliding on the Steam Deck or using the Steam Controller.
+*   **Haptic Feedback:** It can trigger tiny vibration or buzzer. Every time you scroll, drag, or glide, it can give your finger a tiny, satisfying *bzzzt* feeling so you know it worked. This is optinal, but it is a MUST HAVE.
+
+> [!IMPORTANT]
+> Cirque's pinnacle touchpad does runtime calibration after bootup. It will present few expected funky choastic jumps on first few contact. Just re-touch your finger on the pad few times to let to finish its calibration.
 
 ## Installation
 
@@ -50,6 +52,9 @@ manifest:
 
 Sample configuration of a Cirque GlidePoint touchpad on `spi2` with haptic
 feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) pin shims:
+
+> [!NOTE]
+> You'd prompt AI for summarising what is this module does. Require it to ignore the readme, review the source code, and explains the features to you like you're 5.
 
 ```
 &pinctrl {
@@ -208,7 +213,6 @@ Node Properties of `zmk,input-processor-cirque`
 | `sync-rel-xy-ms` | int | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
 | `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 8 |
 | `lift-filter-pct` | int | Detects finger-lift trailing frames: lift-tail samples whose Z fell this percentage below the session Z average (recalculated on the running sample history) are swallowed before movement or gesture detection; rising Z ramps always pass; 0 = disabled | 45 |
-
 | `inertial-disable` | boolean | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
 | `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 90 |
 | `inertial-start-velocity` | int | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |
