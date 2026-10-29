@@ -12,6 +12,7 @@ feedback pulses driven on gpio pins (e.g. the [drv2605 gpio](https://github.com/
 - Edge-scroll ring: the pad rim is split into angular segments, each segment crossing emits one wheel tick (`REL_WHEEL`)
 - Hold-on-edge gesture qualification: rim touches must hold within a drift threshold before wheel output starts (`edge-scroll-gesture-delay-ms` / `edge-scroll-gesture-delay-drift`)
 - Primary / secondary tap detection with configurable duration and drift thresholds (`tap-max-ms` / `tap-max-drift`); secondary tap via the edge-scroll ring as mouse right click
+- Tap-drag: a fast tap followed by a swift re-touch that holds on the same spot presses the mouse button after the hold window, turning the hold into a drag; a quick lift completes the next (double/triple) click without pulsing (`tap-drag-disable` / `tap-drag-window-ms` / `tap-drag-drift` / `tap-drag-hold-start-ms`)
 - Inertial glide: flick then coast on release, with per-tick velocity decay and a minimum release velocity (`inertial-decay-pct` / `inertial-start-velocity`)
 - Optional per-event haptic feedback pulses on GPIO pins, i2c-backed pins like the [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) shim supported; pulses are played off the input thread, one pin per pulse source (scroll-start / scroll-trigger / glide)
 - Glide feedback throttling (`feedback-glide-interval-ms`)
@@ -160,6 +161,9 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
 #include <input/processors/cirque.dtsi>
 
 &zip_cirque {
+	feedback-tap-drag-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
+	feedback-tap-drag-ms = <5>;
+
   feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
   feedback-edge-scroll-start-ms = <5>;
 
@@ -191,6 +195,10 @@ Node Properties of `zmk,input-processor-cirque`
 | `secondary-tap-disable` | boolean | Disable secondary tap detection (tap on the edge-scroll ring as mouse right click, depends on primary tap) | n (tap enabled) |
 | `tap-max-ms` | int | Max gesture duration for tap detection, ms; shorter gestures click instead of dragging or coasting | 120 |
 | `tap-max-drift` | int | Max gesture movement per axis for tap detection, counts | 25 |
+| `tap-drag-disable` | boolean | Disable the tap-drag gesture (a fast tap + swift re-touch that holds on the spot engages a drag: the mouse button presses once the hold window elapses; a quick lift completes the next click) | n (enabled) |
+| `tap-drag-window-ms` | int | Max time between an armed tap and its re-touch, ms; retouches after this window are plain touches again | 200 |
+| `tap-drag-drift` | int | Max per-axis offset between an armed tap position and its re-touch, counts; the re-touch must also stay within this offset for the hold window to switch into a drag | 70 |
+| `tap-drag-hold-start-ms` | int | Hold window after the re-touch, ms; staying on the armed spot this long presses the button, switches into a drag and fires the haptic pulse; lifting earlier stays a plain click (should be recognised as double click from host) | 200 |
 | `edge-scroll-margin-h-pct` | int | Horizontal margin of the center (cursor) region, percent of the pad half-width | 25 |
 | `edge-scroll-margin-v-pct` | int | Vertical margin of the center (cursor) region, percent of the pad half-height | 19 |
 | `edge-scroll-segment` | int | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 64 |
@@ -204,6 +212,8 @@ Node Properties of `zmk,input-processor-cirque`
 | `inertial-disable` | boolean | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
 | `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 90 |
 | `inertial-start-velocity` | int | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |
+| `feedback-tap-drag-gpios` | phandle-array | Haptic feedback GPIO pin for the button press when a tap-drag engages | (none) |
+| `feedback-tap-drag-ms` | int | Duration of the tap-drag haptic feedback pulse, ms | 5 |
 | `feedback-edge-scroll-start-gpios` | phandle-array | Haptic feedback GPIO pin for the start of edge-scroll; pin driven high while the pulse plays | (none) |
 | `feedback-edge-scroll-start-ms` | int | Duration of the scroll-start haptic pulse, ms | 5 |
 | `feedback-edge-scroll-trigger-gpios` | phandle-array | Haptic feedback GPIO pin for edge-scroll wheel output | (none) |

@@ -43,7 +43,15 @@ enum cirque_gesture_mode {
     CIRQUE_GESTURE_SCROLL,
 };
 
+enum cirque_drag_state {
+    CIRQUE_DRAG_IDLE = 0,   // no tap-drag pending
+    CIRQUE_DRAG_ARMED,      // a fast tap completed; a swift re-touch on the spot queues a drag
+    CIRQUE_DRAG_PENDING,    // re-touch accepted: waiting out the hold window on the spot
+    CIRQUE_DRAG_HOLD,       // held on the spot past the window: button pressed, session drags
+};
+
 enum cirque_feedback_pulse {
+    CIRQUE_PULSE_DRAG,           // on tap-drag engages
     CIRQUE_PULSE_SCROLL_START,   // on scroll gesture recognised
     CIRQUE_PULSE_SCROLL_TRIGGER, // on each segment-crossing wheel tick
     CIRQUE_PULSE_GLIDE,          // on inertial glide launch
@@ -56,6 +64,10 @@ struct zip_cirque_config {
     bool secondary_tap_enable;
     uint32_t tap_max_ms;
     uint32_t tap_max_drift;
+    bool tap_drag_enable;
+    uint32_t tap_drag_window_ms;
+    uint32_t tap_drag_drift;
+    uint32_t tap_drag_hold_start_ms;
     uint32_t edge_scroll_margin_h_pct;
     uint32_t edge_scroll_margin_v_pct;
     uint32_t edge_scroll_segment;
@@ -68,6 +80,9 @@ struct zip_cirque_config {
     bool inertial_enable;
     uint32_t inertial_decay_pct;
     int32_t inertial_start_velocity;
+    struct gpio_dt_spec feedback_tap_drag_gpio;
+    bool has_feedback_tap_drag_gpio;
+    uint32_t feedback_tap_drag_ms;
     struct gpio_dt_spec feedback_edge_scroll_start_gpio;
     bool has_feedback_edge_scroll_start_gpio;
     uint32_t feedback_edge_scroll_start_ms;
@@ -95,6 +110,9 @@ struct zip_cirque_data {
     int16_t dx, dy;     // cursor pending delta
     int16_t dv;         // scroll wheel pending delta
     enum cirque_gesture_mode gesture_mode;
+    enum cirque_drag_state drag_state;         // tap-drag state machine
+    struct zip_cirque_sample drag_tap;         // tap-drag: the armed tap's sample
+    struct k_work_delayable drag_window_work;  // tap-drag: expires the re-touch window
     struct k_work_delayable session_work; // session end and inertial glide tick
     struct k_work feedback_on_work; // plays the requested haptic feedback pulse
     struct k_work_delayable feedback_work; // ends the current haptic feedback pulse
@@ -151,6 +169,12 @@ static void cirque_feedback_pulse(struct zip_cirque_data *data,
     uint32_t duration_ms = 0;
 
     switch (pulse) {
+    case CIRQUE_PULSE_DRAG:
+        if (config->has_feedback_tap_drag_gpio) {
+            gpio = &config->feedback_tap_drag_gpio;
+        }
+        duration_ms = config->feedback_tap_drag_ms;
+        break;
     case CIRQUE_PULSE_SCROLL_START:
         if (config->has_feedback_edge_scroll_start_gpio) {
             gpio = &config->feedback_edge_scroll_start_gpio;
@@ -315,6 +339,16 @@ static void cirque_feedback_on(struct k_work *work) {
     k_work_reschedule(&data->feedback_work, K_MSEC(MAX(duration_ms, 1u)));
 }
 
+static void cirque_drag_window_work(struct k_work *work) {
+    struct k_work_delayable *d_work = k_work_delayable_from_work(work);
+    struct zip_cirque_data *data =
+        CONTAINER_OF(d_work, struct zip_cirque_data, drag_window_work);
+    if (data->drag_state == CIRQUE_DRAG_ARMED) {
+        data->drag_state = CIRQUE_DRAG_IDLE;
+        LOG_DBG("DRAG IDLE (timeout)");
+    }
+}
+
 static void cirque_session_work(struct k_work *work) {
     struct k_work_delayable *d_work = k_work_delayable_from_work(work);
     struct zip_cirque_data *data =
@@ -365,11 +399,25 @@ static void cirque_session_work(struct k_work *work) {
             input_report_key(data->dev, btn, true, true, K_FOREVER);
             k_sleep(K_MSEC(21));
             input_report_key(data->dev, btn, false, true, K_FOREVER);
+
+            // arm a tap-drag: a swift re-touch on this spot presses and drags
+            if (config->tap_drag_enable && btn == INPUT_BTN_TOUCH) {
+                data->drag_state = CIRQUE_DRAG_ARMED;
+                data->drag_tap = data->gesture_start;
+                LOG_DBG("DRAG ARMED");
+                k_work_reschedule(&data->drag_window_work, K_MSEC(config->tap_drag_window_ms));
+            }
         }
+    }
+
+    if (data->drag_state == CIRQUE_DRAG_HOLD) {
+        input_report_key(data->dev, INPUT_BTN_TOUCH, false, true, K_FOREVER);
+        data->drag_state = CIRQUE_DRAG_IDLE;
+        LOG_DBG("DRAG IDLE (held & lifted)");
         return;
     }
 
-    if (is_cursor_session && cirque_glide_launch(data, config)) {
+    if (!is_a_tap && is_cursor_session && cirque_glide_launch(data, config)) {
         k_work_reschedule(&data->session_work, K_MSEC(data->tick_ms));
     }
 }
@@ -452,6 +500,20 @@ static int zip_handle_event(const struct device *dev, struct input_event *event,
             }
         }
 
+        if (data->drag_state == CIRQUE_DRAG_ARMED) {
+            int16_t dgx = abs(data->sx - data->drag_tap.x);
+            int16_t dgy = abs(data->sy - data->drag_tap.y);
+            if (data->gesture_mode == CIRQUE_GESTURE_CURSOR &&
+                dgx < config->tap_drag_drift && dgy < config->tap_drag_drift) {
+                k_work_cancel_delayable(&data->drag_window_work);
+                data->drag_state = CIRQUE_DRAG_PENDING;
+                LOG_DBG("DRAG PENDING");
+            } else {
+                data->drag_state = CIRQUE_DRAG_IDLE;
+                LOG_DBG("DRAG IDLE (re-touch off-spot)");
+            }
+        }
+
         int16_t x = 0;
         int16_t y = 0;
 
@@ -461,6 +523,21 @@ static int zip_handle_event(const struct device *dev, struct input_event *event,
             y = data->sy - (data->gesture_last.y >= 0 ? data->gesture_last.y : data->sy);
             data->dx += x;
             data->dy += y;
+            if (data->drag_state == CIRQUE_DRAG_PENDING) {
+                int16_t dgx = abs(data->sx - data->drag_tap.x);
+                int16_t dgy = abs(data->sy - data->drag_tap.y);
+                if (dgx < config->tap_drag_drift && dgy < config->tap_drag_drift) {
+                    if (now - data->gesture_start.ts >= config->tap_drag_hold_start_ms) {
+                        input_report_key(data->dev, INPUT_BTN_TOUCH, true, true, K_FOREVER);
+                        data->drag_state = CIRQUE_DRAG_HOLD;
+                        LOG_DBG("DRAG HOLD");
+                        cirque_feedback_pulse(data, CIRQUE_PULSE_DRAG);
+                    }
+                } else {
+                    data->drag_state = CIRQUE_DRAG_IDLE;
+                    LOG_DBG("DRAG IDLE (wandered off)");
+                }
+            }
             data->gesture_last =
                 (struct zip_cirque_sample){.x = data->sx, .y = data->sy, .ts = now};
             k_work_reschedule(&data->session_work, K_MSEC(config->session_end_idle_ms));
@@ -628,7 +705,9 @@ static int zip_init(const struct device *dev) {
     data->gliding = false;
     data->feedback_req_gpio = NULL;
     data->feedback_active_gpio = NULL;
+    data->drag_state = CIRQUE_DRAG_IDLE;
     k_work_init_delayable(&data->session_work, cirque_session_work);
+    k_work_init_delayable(&data->drag_window_work, cirque_drag_window_work);
     k_work_init(&data->feedback_on_work, cirque_feedback_on);
     k_work_init_delayable(&data->feedback_work, cirque_feedback_off);
     if (config->has_feedback_edge_scroll_start_gpio) {
@@ -651,6 +730,12 @@ static int zip_init(const struct device *dev) {
             return ret;
         }
     }
+    if (config->has_feedback_tap_drag_gpio) {
+        int ret = cirque_feedback_gpio_init(&config->feedback_tap_drag_gpio, "tap-drag");
+        if (ret < 0) {
+            return ret;
+        }
+    }
     return 0;
 }
 
@@ -663,6 +748,10 @@ static int zip_init(const struct device *dev) {
         .secondary_tap_enable = !DT_INST_PROP(n, secondary_tap_disable),                  \
         .tap_max_ms = DT_INST_PROP(n, tap_max_ms),                                        \
         .tap_max_drift = DT_INST_PROP(n, tap_max_drift),                                  \
+        .tap_drag_enable = !DT_INST_PROP(n, tap_drag_disable),                            \
+        .tap_drag_window_ms = DT_INST_PROP(n, tap_drag_window_ms),                        \
+        .tap_drag_drift = DT_INST_PROP(n, tap_drag_drift),                                \
+        .tap_drag_hold_start_ms = DT_INST_PROP(n, tap_drag_hold_start_ms),                \
         .edge_scroll_margin_h_pct = DT_INST_PROP(n, edge_scroll_margin_h_pct),            \
         .edge_scroll_margin_v_pct = DT_INST_PROP(n, edge_scroll_margin_v_pct),            \
         .edge_scroll_segment = DT_INST_PROP(n, edge_scroll_segment),                      \
@@ -677,6 +766,10 @@ static int zip_init(const struct device *dev) {
         .inertial_enable = !DT_INST_PROP(n, inertial_disable),                            \
         .inertial_decay_pct = DT_INST_PROP(n, inertial_decay_pct),                        \
         .inertial_start_velocity = DT_INST_PROP(n, inertial_start_velocity),              \
+        COND_CODE_1(DT_INST_NODE_HAS_PROP(n, feedback_tap_drag_gpios),                    \
+            (.feedback_tap_drag_gpio = GPIO_DT_SPEC_INST_GET(n, feedback_tap_drag_gpios), \
+             .has_feedback_tap_drag_gpio = true,),                                        \
+            ())                                                                           \
         COND_CODE_1(DT_INST_NODE_HAS_PROP(n, feedback_edge_scroll_start_gpios),           \
             (.feedback_edge_scroll_start_gpio =                                           \
                  GPIO_DT_SPEC_INST_GET(n, feedback_edge_scroll_start_gpios),              \
@@ -691,6 +784,8 @@ static int zip_init(const struct device *dev) {
             ())                                                                           \
         .feedback_edge_scroll_trigger_ms =                                                \
             DT_INST_PROP(n, feedback_edge_scroll_trigger_ms),                             \
+        .feedback_tap_drag_ms =                                                           \
+            DT_INST_PROP(n, feedback_tap_drag_ms),                                        \
         COND_CODE_1(DT_INST_NODE_HAS_PROP(n, feedback_glide_gpios),                       \
             (.feedback_glide_gpio = GPIO_DT_SPEC_INST_GET(n, feedback_glide_gpios),       \
              .has_feedback_glide_gpio = true,),                                           \

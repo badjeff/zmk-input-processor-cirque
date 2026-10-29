@@ -52,6 +52,39 @@ properties:
       A gesture that drifted less than this per axis can click instead of
       dragging or coasting.
 
+  tap-drag-disable:
+    type: boolean
+    description: >-
+      Tap-drag gesture is enabled by default: a fast tap followed by a
+      swift re-touch that holds on the same spot engages a drag - the
+      mouse button presses once the hold window elapses. A quick lift
+      instead completes the next (double/triple) click.
+      Set this property to disable the feature.
+
+  tap-drag-window-ms:
+    type: int
+    default: 200
+    description: >-
+      Max time between an armed tap and its re-touch, milliseconds.
+      Retouches after this window are plain touches again.
+
+  tap-drag-drift:
+    type: int
+    default: 70
+    description: >-
+      Max per-axis offset between an armed tap position and its
+      re-touch, counts. The re-touch must also stay within this offset
+      for the hold window to switch into a drag.
+
+  tap-drag-hold-start-ms:
+    type: int
+    default: 200
+    description: >-
+      Hold window after the re-touch, milliseconds. Staying on the
+      armed spot this long presses the mouse button, switches the touch
+      into a drag and fires the haptic pulse; lifting earlier stays a
+      plain click (should be recognised as double click from host).
+
   edge-scroll-margin-h-pct:
     type: int
     default: 25
@@ -144,6 +177,19 @@ properties:
     description: >-
       Minimum release velocity to start coasting, counts/s.
       0 = coast on every non-tap release.
+
+  feedback-tap-drag-gpios:
+    type: phandle-array
+    description: |
+      Haptic feedback GPIO pin for the mouse button press when a tap-drag
+      engages. Pin is driven high while the pulse plays.
+
+  feedback-tap-drag-ms:
+    type: int
+    default: 5
+    description: >-
+      Duration of the tap-drag haptic feedback pulse.
+      Pulse plays on feedback-tap-drag-gpios.
 
   feedback-edge-scroll-start-gpios:
     type: phandle-array
