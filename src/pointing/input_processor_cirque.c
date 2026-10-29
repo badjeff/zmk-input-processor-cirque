@@ -27,7 +27,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
  * Launch velocity and glide tick are both derived from a small history ring of
  * samples (x, y, ts) rather than more configured timings.
  */
-#define CIRQUE_HISTORY_LEN 6      /* history ring length (samples of x/y/ts) */
+#define CIRQUE_HISTORY_LEN 6      /* history ring length (samples of x/y/ts/z) */
 #define CIRQUE_TICK_MIN_MS 4      /* clamp bounds for the glide tick derived from history */
 #define CIRQUE_TICK_MAX_MS 40
 #define CIRQUE_GLIDE_MAX_MS 2200  /* fail-safe cap so a glide can never run forever */
@@ -64,6 +64,7 @@ struct zip_cirque_config {
     uint32_t session_end_idle_ms;
     uint32_t sync_rel_xy_ms;
     uint32_t sync_rel_v_ms;
+    uint32_t lift_filter_pct;
     bool inertial_enable;
     uint32_t inertial_decay_pct;
     int32_t inertial_start_velocity;
@@ -80,7 +81,7 @@ struct zip_cirque_config {
 };
 
 struct zip_cirque_sample {
-    int16_t x, y;
+    int16_t x, y, z;
     int64_t ts;
 };
 
@@ -103,7 +104,7 @@ struct zip_cirque_data {
     struct zip_cirque_sample gesture_start; // gesture start sample
     struct zip_cirque_sample gesture_last; // gesture last sample; x/y = -1 when not sampled
     struct k_spinlock lock; // protects the glide handoff and the feedback pulse request
-    struct zip_cirque_sample hist[CIRQUE_HISTORY_LEN]; // history ring of samples (x, y, ts)
+    struct zip_cirque_sample hist[CIRQUE_HISTORY_LEN]; // history ring of samples (x, y, ts, z)
     uint8_t hist_head, hist_len; // ring window start / number of valid samples
     bool gliding;
     int32_t gvx, gvy;    // glide velocity, counts/s
@@ -130,11 +131,12 @@ static float cirque_ellipse_dist(const struct zip_cirque_config *config,
 }
 
 static void cirque_hist_push(struct zip_cirque_data *data, int16_t x, int16_t y,
-                             int64_t ts) {
+                             int64_t ts, int16_t z) {
     uint8_t idx = (uint8_t)((data->hist_head + data->hist_len) % CIRQUE_HISTORY_LEN);
     data->hist[idx].x = x;
     data->hist[idx].y = y;
     data->hist[idx].ts = ts;
+    data->hist[idx].z = z;
     if (data->hist_len < CIRQUE_HISTORY_LEN) {
         data->hist_len++;
     } else {
@@ -387,6 +389,28 @@ static int zip_handle_event(const struct device *dev, struct input_event *event,
 
     /* on all axis value ready */
     if (event->sync) {
+
+        if (config->lift_filter_pct > 0 && data->hist_len > 0) {
+            // session-scoped z average, summed on demand over the ring;
+            // newest hist sample z stands in for the most recent raw z
+            int32_t z_sum = 0;
+            for (uint8_t i = 0; i < data->hist_len; i++) {
+                z_sum += data->hist[(data->hist_head + i) % CIRQUE_HISTORY_LEN].z;
+            }
+            int32_t z_avg = z_sum / data->hist_len;
+            int32_t z_floor = z_avg * (100 - config->lift_filter_pct) / 100;
+            uint8_t newest =
+                (uint8_t)((data->hist_head + data->hist_len - 1) % CIRQUE_HISTORY_LEN);
+            bool lift_frame =
+                data->sz < z_floor && data->sz <= data->hist[newest].z;
+            if (lift_frame) {
+                // LOG_DBG("Z: %d, X: %d, Y: %d (lifting)", data->sz, data->sx, data->sy);
+                event->value = 0;
+                event->sync = false;
+                return ZMK_INPUT_PROC_STOP; // 1;
+            }
+        }
+
         // LOG_DBG("Z: %d, X: %d, Y: %d", data->sz, data->sx, data->sy);
 
         if (data->gliding) {
@@ -437,7 +461,6 @@ static int zip_handle_event(const struct device *dev, struct input_event *event,
             y = data->sy - (data->gesture_last.y >= 0 ? data->gesture_last.y : data->sy);
             data->dx += x;
             data->dy += y;
-            cirque_hist_push(data, data->sx, data->sy, now);
             data->gesture_last =
                 (struct zip_cirque_sample){.x = data->sx, .y = data->sy, .ts = now};
             k_work_reschedule(&data->session_work, K_MSEC(config->session_end_idle_ms));
@@ -531,6 +554,8 @@ static int zip_handle_event(const struct device *dev, struct input_event *event,
             data->hs = -1;
             data->gesture_last.x = data->gesture_last.y = -1;
         }
+
+        cirque_hist_push(data, data->sx, data->sy, now, data->sz);
 
     } /* if (event->sync) */
     else {
@@ -648,6 +673,7 @@ static int zip_init(const struct device *dev) {
         .session_end_idle_ms = DT_INST_PROP(n, session_end_idle_ms),                      \
         .sync_rel_xy_ms = DT_INST_PROP(n, sync_rel_xy_ms),                                \
         .sync_rel_v_ms = DT_INST_PROP(n, sync_rel_v_ms),                                  \
+        .lift_filter_pct = DT_INST_PROP(n, lift_filter_pct),                              \
         .inertial_enable = !DT_INST_PROP(n, inertial_disable),                            \
         .inertial_decay_pct = DT_INST_PROP(n, inertial_decay_pct),                        \
         .inertial_start_velocity = DT_INST_PROP(n, inertial_start_velocity),              \

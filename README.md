@@ -16,6 +16,7 @@ feedback pulses driven on gpio pins (e.g. the [drv2605 gpio](https://github.com/
 - Optional per-event haptic feedback pulses on GPIO pins, i2c-backed pins like the [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) shim supported; pulses are played off the input thread, one pin per pulse source (scroll-start / scroll-trigger / glide)
 - Glide feedback throttling (`feedback-glide-interval-ms`)
 - Rate limited report sync for cursor (`sync-rel-xy-ms`) and scroll wheel (`sync-rel-v-ms`) deltas
+- Finger-lift filter: pads that keep reporting as contact strength drains are pre-processed, and lift-tail frames whose Z fell below the session Z average are swallowed before movement or gesture detection (`lift-filter-pct`)
 
 ## Installation
 
@@ -159,18 +160,22 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
 #include <input/processors/cirque.dtsi>
 
 &zip_cirque {
-  feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>;
+  feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
   feedback-edge-scroll-start-ms = <5>;
 
-  feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_1 0 9>;
+  feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_1 0 9>; // waveform: 9
   feedback-edge-scroll-trigger-ms = <2>;
 
   /* Enable haptic feedback on touching/gliding
    * (Steam Deck / Steam Controller favor)
    */
-  feedback-glide-gpios = <&gpio_drv2605_2 0 9>;
+  feedback-glide-gpios = <&gpio_drv2605_2 0 9>; // waveform: 9
   feedback-glide-ms = <2>;
   feedback-glide-interval-ms = <25>;
+
+  /* Finetune scrolling edge margin for feedback enabled */
+  edge-scroll-margin-h-pct = <29>; // default: 25
+  edge-scroll-margin-v-pct = <22>; // default: 19
 };
 ```
 
@@ -184,16 +189,18 @@ Node Properties of `zmk,input-processor-cirque`
 | `abs-center-y` | int | Circle center of the touchpad coordinates, y-axis; Y-axis value range [0..1535] (top to bottom), Z-axis value range [0..63] (hover to touch down) | 768 |
 | `primary-tap-disable` | boolean | Disable primary tap detection | n (tap enabled) |
 | `secondary-tap-disable` | boolean | Disable secondary tap detection (tap on the edge-scroll ring as mouse right click, depends on primary tap) | n (tap enabled) |
-| `tap-max-ms` | int | Max gesture duration for tap detection, ms; shorter gestures click instead of dragging or coasting | 139 |
-| `tap-max-drift` | int | Max gesture movement per axis for tap detection, counts | 31 |
+| `tap-max-ms` | int | Max gesture duration for tap detection, ms; shorter gestures click instead of dragging or coasting | 120 |
+| `tap-max-drift` | int | Max gesture movement per axis for tap detection, counts | 25 |
 | `edge-scroll-margin-h-pct` | int | Horizontal margin of the center (cursor) region, percent of the pad half-width | 25 |
 | `edge-scroll-margin-v-pct` | int | Vertical margin of the center (cursor) region, percent of the pad half-height | 19 |
-| `edge-scroll-segment` | int | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 48 |
-| `edge-scroll-gesture-delay-ms` | int | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 135 |
+| `edge-scroll-segment` | int | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 64 |
+| `edge-scroll-gesture-delay-ms` | int | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 175 |
 | `edge-scroll-gesture-delay-drift` | int | Max movement per axis during the hold-on-edge window, counts | 20 |
 | `session-end-idle-ms` | int | Idle time after the last touch frame before a gesture session ends: runs tap detection and, for cursor sessions, starts the inertial glide | 20 |
 | `sync-rel-xy-ms` | int | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
-| `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 15 |
+| `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 8 |
+| `lift-filter-pct` | int | Detects finger-lift trailing frames: lift-tail samples whose Z fell this percentage below the session Z average (recalculated on the running sample history) are swallowed before movement or gesture detection; rising Z ramps always pass; 0 = disabled | 45 |
+
 | `inertial-disable` | boolean | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
 | `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 90 |
 | `inertial-start-velocity` | int | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |

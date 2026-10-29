@@ -39,14 +39,14 @@ properties:
 
   tap-max-ms:
     type: int
-    default: 139
+    default: 120
     description: >-
       Max gesture duration for tap detection, milliseconds.
       A gesture shorter than this can click instead of dragging or coasting.
 
   tap-max-drift:
     type: int
-    default: 31
+    default: 25
     description: >-
       Max gesture movement per axis for tap detection, counts.
       A gesture that drifted less than this per axis can click instead of
@@ -70,7 +70,7 @@ properties:
 
   edge-scroll-segment:
     type: int
-    default: 48
+    default: 64
     description: >-
       Number of angular segments the edge-scroll ring is split into. Crossing
       a segment boundary emits one wheel tick. Values < 2 fall back to a
@@ -78,7 +78,7 @@ properties:
 
   edge-scroll-gesture-delay-ms:
     type: int
-    default: 135
+    default: 175
     description: >-
       Hold-on-edge delay before an edge touch qualifies as a scroll gesture,
       milliseconds. The rim touch must stay within
@@ -111,10 +111,19 @@ properties:
 
   sync-rel-v-ms:
     type: int
-    default: 15
+    default: 8
     description: >-
       Rate limit for emitting accumulated REL_WHEEL scroll ticks,
       milliseconds between reports.
+
+  lift-filter-pct:
+    type: int
+    default: 45
+    description: >-
+      Detects finger-lift trailing frames: samples whose Z fell this
+      percentage below the session Z average (recalculated on the running
+      sample history) are swallowed before movement or gesture detection;
+      a rising Z ramp always passes. 0 = disabled.
 
   inertial-disable:
     type: boolean
