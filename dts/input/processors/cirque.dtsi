@@ -8,4 +8,9 @@
         compatible = "zmk,input-processor-cirque";
         #input-processor-cells = <0>;
     };
+
+    /omit-if-no-ref/ zip_cirque_setter: zip_cirque_setter {
+        compatible = "zmk,input-processor-cirque-setter";
+        processor = <&zip_cirque>;
+    };
 };

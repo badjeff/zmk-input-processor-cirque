@@ -51,48 +51,48 @@ manifest:
 ## Configuration
 
 Sample configuration of a Cirque GlidePoint touchpad on `spi2` with haptic
-feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) pin shims:
+feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-driver) pin shims.
 
 > [!NOTE]
 > You'd prompt AI for summarising what is this module does. Require it to ignore the readme, review the source code, and explains the features to you like you're 5.
 
-```
+```dts
 &pinctrl {
-	spi2_default: spi2_default {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
-                    <NRF_PSEL(SPIM_MOSI, 1, 15)>,
-                    <NRF_PSEL(SPIM_MISO, 1, 14)>;
-		};
-	};
-	spi2_sleep: spi2_sleep {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
-                    <NRF_PSEL(SPIM_MOSI, 1, 15)>,
-                    <NRF_PSEL(SPIM_MISO, 1, 14)>;
-			low-power-enable;
-		};
-	};
-	i2c1_default: i2c1_default {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 5)>;
-		};
-	};
+  spi2_default: spi2_default {
+    group1 {
+      psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
+              <NRF_PSEL(SPIM_MOSI, 1, 15)>,
+              <NRF_PSEL(SPIM_MISO, 1, 14)>;
+    };
+  };
+  spi2_sleep: spi2_sleep {
+    group1 {
+      psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
+              <NRF_PSEL(SPIM_MOSI, 1, 15)>,
+              <NRF_PSEL(SPIM_MISO, 1, 14)>;
+      low-power-enable;
+    };
+  };
+  i2c1_default: i2c1_default {
+    group1 {
+      psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
+              <NRF_PSEL(TWIM_SCL, 0, 5)>;
+    };
+  };
 
-	i2c1_sleep: i2c1_sleep {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 5)>;
-			low-power-enable;
-		};
-	};
+  i2c1_sleep: i2c1_sleep {
+    group1 {
+      psels = <NRF_PSEL(TWIM_SDA, 0, 4)>,
+              <NRF_PSEL(TWIM_SCL, 0, 5)>;
+      low-power-enable;
+    };
+  };
 };
 
 // release gpio1 11 & 12 from xiao_ble-pinctrl.dtsi
 // for &trackball { irq-gpios }
 &uart0 {
-	status = "disabled";
+  status = "disabled";
 };
 
 &spi2 {
@@ -155,36 +155,62 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
     dev-reg = <0x5a>;
   };
   gpio_drv2605_2: gpio_drv2605_2 {
-    compatible = "ti,drv2605-alt-gpio";
-    status = "okay";
-    gpio-controller;
-    #gpio-cells = <2>;
-    dev-reg = <0x5a>;
+  	compatible = "ti,drv2605-alt-gpio";
+  	status = "okay";
+  	gpio-controller;
+  	#gpio-cells = <2>;
+  	dev-reg = <0x5a>;
+  };
+  gpio_drv2605_3: gpio_drv2605_3 {
+  	compatible = "ti,drv2605-alt-gpio";
+  	status = "okay";
+  	gpio-controller;
+  	#gpio-cells = <2>;
+  	dev-reg = <0x5a>;
   };
 };
 
 #include <input/processors/cirque.dtsi>
 
 &zip_cirque {
-	feedback-tap-drag-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
-	feedback-tap-drag-ms = <5>;
+  feedback-tap-drag-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
+  feedback-tap-drag-ms = <1>;
 
-  feedback-edge-scroll-start-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
-  feedback-edge-scroll-start-ms = <5>;
+  feedback-edge-scroll-start-gpios = <&gpio_drv2605_1 0 8>; // waveform: 8
+  feedback-edge-scroll-start-ms = <1>;
 
-  feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_1 0 9>; // waveform: 9
-  feedback-edge-scroll-trigger-ms = <2>;
+  feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_2 0 9>; // waveform: 9
+  feedback-edge-scroll-trigger-ms = <1>;
 
   /* Enable haptic feedback on touching/gliding
    * (Steam Deck / Steam Controller favor)
    */
-  feedback-glide-gpios = <&gpio_drv2605_2 0 9>; // waveform: 9
-  feedback-glide-ms = <2>;
-  feedback-glide-interval-ms = <25>;
+  // feedback-glide-gpios = <&gpio_drv2605_3 0 9>; // waveform: 9
+  // feedback-glide-ms = <1>;
+  // feedback-glide-interval-ms = <25>;
 
   /* Finetune scrolling edge margin for feedback enabled */
-  edge-scroll-margin-h-pct = <29>; // default: 25
-  edge-scroll-margin-v-pct = <22>; // default: 19
+  edge-scroll-margin-h-pct = <30>; // default: 25
+  edge-scroll-margin-v-pct = <24>; // default: 19
+};
+
+/* use one input-listener to collect input from physical touchpad device
+ * and use &zip_cirque to intercept all absolute input
+ */
+tpad0_abs: tpad0_abs {
+  compatible = "zmk,input-listener";
+  device = <&tpad0>;
+  input-processors = <&zip_cirque>; // as an interceptor
+};
+
+/* use another input-listener to report intercepted input from &zip_cirque */
+tpad0_rel {
+  compatible = "zmk,input-listener";
+  device = <&zip_cirque>; // as a virtual device
+  default {
+    input-processors = <&xy_scaler 4 7>;
+    layers = <DEFAULT>;
+  };
 };
 ```
 
@@ -211,10 +237,16 @@ Node Properties of `zmk,input-processor-cirque`
 | `edge-scroll-gesture-delay-drift` | int | Max movement per axis during the hold-on-edge window, counts | 20 |
 | `session-end-idle-ms` | int | Idle time after the last touch frame before a gesture session ends: runs tap detection and, for cursor sessions, starts the inertial glide | 20 |
 | `sync-rel-xy-ms` | int | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
-| `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 8 |
+| `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 1 |
+| `history-len` | int | Number of recent touch samples kept in the history ring; both the inertial glide tick and the launch velocity are derived from this window | 6 |
 | `lift-filter-pct` | int | Detects finger-lift trailing frames: lift-tail samples whose Z fell this percentage below the session Z average (recalculated on the running sample history) are swallowed before movement or gesture detection; rising Z ramps always pass; 0 = disabled | 45 |
 | `inertial-disable` | boolean | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
-| `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 90 |
+| `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 93 |
+| `inertial-tick-ms` | int | Fixed glide tick override, ms; 0 = derive the tick from the sample history and clamp it with `inertial-tick-min-ms`/`inertial-tick-max-ms` | 0 |
+| `inertial-tick-min-ms` | int | Lower clamp bound for the glide tick derived from the sample history, ms | 4 |
+| `inertial-tick-max-ms` | int | Upper clamp bound for the glide tick derived from the sample history, ms | 40 |
+| `inertial-glide-max-ms` | int | Fail-safe cap on a single inertial glide, ms, so a glide can never run forever | 2950 |
+| `inertial-velocity-cap` | int | Sanity cap on the launch velocity of an inertial glide, counts/s | 16384 |
 | `inertial-start-velocity` | int | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |
 | `feedback-tap-drag-gpios` | phandle-array | Haptic feedback GPIO pin for the button press when a tap-drag engages | (none) |
 | `feedback-tap-drag-ms` | int | Duration of the tap-drag haptic feedback pulse, ms | 5 |
@@ -225,6 +257,79 @@ Node Properties of `zmk,input-processor-cirque`
 | `feedback-glide-gpios` | phandle-array | Haptic feedback GPIO pin for cursor output | (none) |
 | `feedback-glide-ms` | int | Duration of the cursor haptic pulse, ms | 2 |
 | `feedback-glide-interval-ms` | int | Min interval between two cursor haptic feedback pulses, ms; 0 = no throttling | 25 |
+
+## Runtime Attributes
+
+Most settings can be adjusted at runtime through
+[`zmk-behavior-sensor-attr-cycle`](https://github.com/badjeff/zmk-behavior-sensor-attr-cycle)
+without rebuilding. Changes apply immediately and are not persisted: the DTS
+defaults return at reboot.
+
+The input processor is not a Zephyr sensor device, so the module provides a
+small `zmk,input-processor-cirque-setter` bridge node that forwards sensor attributes to it.
+The bridge is enabled by `CONFIG_ZMK_INPUT_PROCESSOR_CIRQUE_SETTER` and is only
+built when a `zmk,behavior-sensor-attr-cycle` node exists.
+
+```dts
+#include <dt-bindings/zmk/zip_cirque_attr.h>
+#include <input/processors/cirque.dtsi>
+
+/ {
+    behaviors {
+        cirque_inertial: cirque_inertial {
+            compatible = "zmk,behavior-sensor-attr-cycle";
+            #binding-cells = <1>;
+            sensor_device = <&zip_cirque_setter>;
+            attr = <ZIP_CIRQUE_ATTR_INERTIAL_ENABLE>;
+            values = <1 0>;
+        };
+        cirque_scroll_trigger_haptic: cirque_scroll_trigger_haptic {
+            compatible = "zmk,behavior-sensor-attr-cycle";
+            #binding-cells = <1>;
+            sensor_device = <&zip_cirque_setter>;
+            attr = <ZIP_CIRQUE_ATTR_FEEDBACK_EDGE_SCROLL_TRIGGER_ENABLE>;
+            values = <1 0>;
+        };
+        cirque_inertial_decay: cirque_inertial_decay {
+            compatible = "zmk,behavior-sensor-attr-cycle";
+            #binding-cells = <1>;
+            sensor_device = <&zip_cirque_setter>;
+            attr = <ZIP_CIRQUE_ATTR_INERTIAL_DECAY_PCT>;
+            values = <100 97 93 90 85 80>;
+        };
+    };
+};
+```
+
+Keymap:
+
+```dts
+&cirque_inertial 1
+&cirque_scroll_trigger_haptic 1
+&cirque_inertial_decay 1
+```
+
+### Attributes
+
+Attribute IDs live in `<dt-bindings/zmk/zip_cirque_attr.h>` with the
+`ZIP_CIRQUE_ATTR_*` prefix.
+
+| Group | Attributes |
+|-------|------------|
+| Tap / drag | `PRIMARY_TAP_ENABLE`, `SECONDARY_TAP_ENABLE`, `TAP_MAX_MS`, `TAP_MAX_DRIFT`, `TAP_DRAG_ENABLE`, `TAP_DRAG_WINDOW_MS`, `TAP_DRAG_DRIFT`, `TAP_DRAG_HOLD_START_MS` |
+| Edge scroll | `EDGE_SCROLL_MARGIN_H_PCT`, `EDGE_SCROLL_MARGIN_V_PCT`, `EDGE_SCROLL_SEGMENT`, `EDGE_SCROLL_GESTURE_DELAY_MS`, `EDGE_SCROLL_GESTURE_DELAY_DRIFT` |
+| Session | `SESSION_END_IDLE_MS`, `SYNC_REL_XY_MS`, `SYNC_REL_V_MS`, `LIFT_FILTER_PCT` |
+| Inertial | `INERTIAL_ENABLE`, `INERTIAL_TICK_MS`, `INERTIAL_TICK_MIN_MS`, `INERTIAL_TICK_MAX_MS`, `INERTIAL_DECAY_PCT`, `INERTIAL_GLIDE_MAX_MS`, `INERTIAL_VELOCITY_CAP`, `INERTIAL_START_VELOCITY` |
+| Haptics | `FEEDBACK_TAP_DRAG_ENABLE`, `FEEDBACK_EDGE_SCROLL_START_ENABLE`, `FEEDBACK_EDGE_SCROLL_TRIGGER_ENABLE`, `FEEDBACK_GLIDE_ENABLE`, `FEEDBACK_TAP_DRAG_MS`, `FEEDBACK_EDGE_SCROLL_START_MS`, `FEEDBACK_EDGE_SCROLL_TRIGGER_MS`, `FEEDBACK_GLIDE_MS`, `FEEDBACK_GLIDE_INTERVAL_MS` |
+
+Notes:
+
+*   Haptic channels default to enabled only when their feedback GPIO exists.
+    Disabling a channel mutes any pulse currently playing.
+*   Disabling `INERTIAL_ENABLE` stops an active glide immediately.
+*   `INERTIAL_TICK_MS = 0` restores derived-tick behaviour at the next launch.
+*   Values are clamped to a safe range; out-of-range values are adjusted rather
+    than rejected.
 
 ## License
 

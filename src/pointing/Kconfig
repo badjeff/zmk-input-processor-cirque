@@ -8,4 +8,13 @@ config ZMK_INPUT_PROCESSOR_CIRQUE
     default y
     depends on DT_HAS_ZMK_INPUT_PROCESSOR_CIRQUE_ENABLED
 
+config ZMK_INPUT_PROCESSOR_CIRQUE_SETTER
+    bool "Cirque GlidePoint setter bridge"
+    default y
+    depends on ZMK_INPUT_PROCESSOR_CIRQUE
+    depends on DT_HAS_ZMK_BEHAVIOR_SENSOR_ATTR_CYCLE_ENABLED
+    help
+      Enable the Cirque setter bridge for adjusting input
+      processor settings through zmk,behavior-sensor-attr-cycle.
+
 endif

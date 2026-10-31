@@ -144,10 +144,18 @@ properties:
 
   sync-rel-v-ms:
     type: int
-    default: 8
+    default: 1
     description: >-
       Rate limit for emitting accumulated REL_WHEEL scroll ticks,
       milliseconds between reports.
+
+  history-len:
+    type: int
+    default: 6
+    description: >-
+      Number of recent touch samples kept in the history ring. Both the
+      inertial glide tick and the launch velocity are derived from this
+      window.
 
   lift-filter-pct:
     type: int
@@ -166,10 +174,45 @@ properties:
 
   inertial-decay-pct:
     type: int
-    default: 90
+    default: 93
     description: >-
       Glide velocity decay rate per tick, percent.
       Percentage of velocity to pass to next tick.
+
+  inertial-tick-ms:
+    type: int
+    default: 0
+    description: >-
+      Fixed glide tick override, milliseconds. 0 = derive the tick from the
+      sample history and clamp it with inertial-tick-min-ms and
+      inertial-tick-max-ms.
+
+  inertial-tick-min-ms:
+    type: int
+    default: 4
+    description: >-
+      Lower clamp bound for the glide tick derived from the sample history,
+      milliseconds.
+
+  inertial-tick-max-ms:
+    type: int
+    default: 40
+    description: >-
+      Upper clamp bound for the glide tick derived from the sample history,
+      milliseconds.
+
+  inertial-glide-max-ms:
+    type: int
+    default: 2950
+    description: >-
+      Fail-safe cap on a single inertial glide, milliseconds, so a glide can
+      never run forever.
+
+  inertial-velocity-cap:
+    type: int
+    default: 16384
+    description: >-
+      Sanity cap on the launch velocity of an inertial glide, counts/s.
 
   inertial-start-velocity:
     type: int

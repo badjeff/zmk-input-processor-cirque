@@ -1,0 +1,14 @@
+# Copyright (c) 2026, The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: |
+  Sensor attribute bridge for the Cirque input processor. Point
+  zmk,behavior-sensor-attr-cycle at this node to adjust the processor at runtime.
+
+compatible: "zmk,input-processor-cirque-setter"
+
+properties:
+  processor:
+    required: true
+    type: phandle
+    description: The zmk,input-processor-cirque device to tune.
