@@ -17,6 +17,7 @@ feedback pulses driven on gpio pins (e.g. the [drv2605 gpio](https://github.com/
 *   **Tap-Tap and Drag:** If you tap quickly and then put your finger right back down to hold it, it "grabs" whatever is on the screen so you can highlight text.
 *   **Inertial Glide:** If you flick your finger and let go, the mouse cursor doesn't stop instantly, it smoothly glides and coasts to a stop, just like cursor sliding on the Steam Deck or using the Steam Controller.
 *   **Haptic Feedback:** It can trigger tiny vibration or buzzer. Every time you scroll, drag, or glide, it can give your finger a tiny, satisfying *bzzzt* feeling so you know it worked. This is optinal, but it is a MUST HAVE.
+*   **Runtime Adjustment:** Most time based settings can be adjusted at runtime through [`zmk-behavior-sensor-attr-cycle`](https://github.com/badjeff/zmk-behavior-sensor-attr-cycle) without re-flashing. Changes reflect immediately (not persisted) for fine tuning.
 
 > [!IMPORTANT]
 > Cirque's pinnacle touchpad does runtime calibration after bootup. It will present few expected funky choastic jumps on first few contact. Just re-touch your finger on the pad few times to let to finish its calibration.
