@@ -111,7 +111,7 @@ properties:
 
   edge-scroll-gesture-delay-ms:
     type: int
-    default: 175
+    default: 135
     description: >-
       Hold-on-edge delay before an edge touch qualifies as a scroll gesture,
       milliseconds. The rim touch must stay within

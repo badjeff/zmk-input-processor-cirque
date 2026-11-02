@@ -11,13 +11,14 @@ feedback pulses driven on gpio pins (e.g. the [drv2605 gpio](https://github.com/
 
 ### Feature Highlights
 
-*   **Precise Pointer:** It detects finger-lift trailing frames, swallows phantom inputs caused by wireless peripheral without wired grounding.
-*   **Circular Scroll:** The very outer edge of the circle acts like a scrolling rim. If you trace your finger around the rim, it scrolls like a mouse wheel. Once scroll gesture mode on, you can spin your finger all over the pad, adjust the scroll speed by circling closer or further to the center.
+*   **Precise Pointer:** It detects finger-lift trailing frames, swallows phantom inputs caused by wireless peripheral without wired grounding. It reduces pixel drifts on tap-click.
+*   **Circular Scroll:** The very outer edge of the circle acts like a scrolling rim. If you trace your finger around the rim, it scrolls like a mouse wheel. Once scroll gesture mode on, you can spin your finger all over the pad, adjust the scroll speed by circling closer or further to the center. Single axis scrolling only, cause you can hold shift on keyboard for horizontal pan. The rim ~~could~~should be configured as eclipse due to the aspect ratio of sensing grid. And haptic feedback tells you it is in scroll mode.
 *   **Tap to Click:** If you tap quickly with your finger, it clicks the left mouse button. If you tap on the outer edge, it performs a right-click.
 *   **Tap-Tap and Drag:** If you tap quickly and then put your finger right back down to hold it, it "grabs" whatever is on the screen so you can highlight text.
-*   **Inertial Glide:** If you flick your finger and let go, the mouse cursor doesn't stop instantly, it smoothly glides and coasts to a stop, just like cursor sliding on the Steam Deck or using the Steam Controller.
+*   **Inertial Glide:** If you flick your finger and let go, the mouse cursor doesn't stop instantly, it smoothly glides and coasts to a stop, opt-in haptic gliding like cursor sliding on the Steam Deck or using the Steam Controller.
 *   **Haptic Feedback:** It can trigger tiny vibration or buzzer. Every time you scroll, drag, or glide, it can give your finger a tiny, satisfying *bzzzt* feeling so you know it worked. This is optinal, but it is a MUST HAVE.
-*   **Runtime Adjustment:** Most time based settings can be adjusted at runtime through [`zmk-behavior-sensor-attr-cycle`](https://github.com/badjeff/zmk-behavior-sensor-attr-cycle) without re-flashing. Changes reflect immediately (not persisted) for fine tuning.
+*   **Runtime Adjustment:** Most time based settings can be adjusted at runtime through [`zmk-behavior-sensor-attr-cycle`](https://github.com/badjeff/zmk-behavior-sensor-attr-cycle) without re-flashing. Changes reflect immediately (not persisted) for fine tuning. Persistent settings is not in the scope of the processor.
+*    **Portable Processor:** Independant to Cirque GlidePoint Touchpad. You can use this on any Zephyr's input driver that output absolute coordinates.
 
 > [!IMPORTANT]
 > Cirque's pinnacle touchpad does runtime calibration after bootup. It will present few expected funky choastic jumps on first few contact. Just re-touch your finger on the pad few times to let to finish its calibration.
@@ -177,7 +178,7 @@ feedback pulses wired to [drv2605 gpio](https://github.com/badjeff/zmk-drv2605-d
   feedback-tap-drag-gpios = <&gpio_drv2605_0 0 9>; // waveform: 9
   feedback-tap-drag-ms = <1>;
 
-  feedback-edge-scroll-start-gpios = <&gpio_drv2605_1 0 8>; // waveform: 8
+  feedback-edge-scroll-start-gpios = <&gpio_drv2605_1 0 9>; // waveform: 9
   feedback-edge-scroll-start-ms = <1>;
 
   feedback-edge-scroll-trigger-gpios = <&gpio_drv2605_2 0 9>; // waveform: 9
@@ -234,7 +235,7 @@ Node Properties of `zmk,input-processor-cirque`
 | `edge-scroll-margin-h-pct` | int | Horizontal margin of the center (cursor) region, percent of the pad half-width | 25 |
 | `edge-scroll-margin-v-pct` | int | Vertical margin of the center (cursor) region, percent of the pad half-height | 19 |
 | `edge-scroll-segment` | int | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 64 |
-| `edge-scroll-gesture-delay-ms` | int | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 175 |
+| `edge-scroll-gesture-delay-ms` | int | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 135 |
 | `edge-scroll-gesture-delay-drift` | int | Max movement per axis during the hold-on-edge window, counts | 20 |
 | `session-end-idle-ms` | int | Idle time after the last touch frame before a gesture session ends: runs tap detection and, for cursor sessions, starts the inertial glide | 20 |
 | `sync-rel-xy-ms` | int | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
