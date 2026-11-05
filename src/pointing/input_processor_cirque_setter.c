@@ -30,8 +30,7 @@ struct zip_cirque_setter_config {
 };
 
 static int zip_cirque_setter_attr_set(const struct device *dev, enum sensor_channel chan,
-                                        enum sensor_attribute attr,
-                                        const struct sensor_value *val) {
+                                      enum sensor_attribute attr, const struct sensor_value *val) {
     const struct zip_cirque_setter_config *config = dev->config;
 
     if (chan != SENSOR_CHAN_ALL) {
@@ -63,13 +62,12 @@ static const struct sensor_driver_api zip_cirque_setter_api = {
     .attr_set = zip_cirque_setter_attr_set,
 };
 
-#define ZIP_CIRQUE_SETTER_INST(n)                                                     \
-    static const struct zip_cirque_setter_config config_##n = {                       \
-        .processor = DEVICE_DT_GET(DT_INST_PHANDLE(n, processor)),                      \
-    };                                                                                  \
-    DEVICE_DT_INST_DEFINE(n, zip_cirque_setter_init, NULL, NULL, &config_##n,         \
-                          POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,             \
-                          &zip_cirque_setter_api);
+#define ZIP_CIRQUE_SETTER_INST(n)                                                                  \
+    static const struct zip_cirque_setter_config config_##n = {                                    \
+        .processor = DEVICE_DT_GET(DT_INST_PHANDLE(n, processor)),                                 \
+    };                                                                                             \
+    DEVICE_DT_INST_DEFINE(n, zip_cirque_setter_init, NULL, NULL, &config_##n, POST_KERNEL,         \
+                          CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &zip_cirque_setter_api);
 
 DT_INST_FOREACH_STATUS_OKAY(ZIP_CIRQUE_SETTER_INST)
 

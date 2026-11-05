@@ -220,45 +220,45 @@ tpad0_rel {
 
 Node Properties of `zmk,input-processor-cirque`
 
-| Property | Type | Description | Default |
-|----------|------|-------------|---------|
-| `abs-center-x` | int | Circle center of the touchpad coordinates, x-axis; X-axis value range [0..2047] (left to right) | 1024 |
-| `abs-center-y` | int | Circle center of the touchpad coordinates, y-axis; Y-axis value range [0..1535] (top to bottom), Z-axis value range [0..63] (hover to touch down) | 768 |
-| `primary-tap-disable` | boolean | Disable primary tap detection | n (tap enabled) |
-| `secondary-tap-disable` | boolean | Disable secondary tap detection (tap on the edge-scroll ring as mouse right click, depends on primary tap) | n (tap enabled) |
-| `tap-max-ms` | int | Max gesture duration for tap detection, ms; shorter gestures click instead of dragging or coasting | 120 |
-| `tap-max-drift` | int | Max gesture movement per axis for tap detection, counts | 25 |
-| `tap-drag-disable` | boolean | Disable the tap-drag gesture (a fast tap + swift re-touch that holds on the spot engages a drag: the mouse button presses once the hold window elapses; a quick lift completes the next click) | n (enabled) |
-| `tap-drag-window-ms` | int | Max time between an armed tap and its re-touch, ms; retouches after this window are plain touches again | 200 |
-| `tap-drag-drift` | int | Max per-axis offset between an armed tap position and its re-touch, counts; the re-touch must also stay within this offset for the hold window to switch into a drag | 70 |
-| `tap-drag-hold-start-ms` | int | Hold window after the re-touch, ms; staying on the armed spot this long presses the button, switches into a drag and fires the haptic pulse; lifting earlier stays a plain click (should be recognised as double click from host) | 200 |
-| `edge-scroll-margin-h-pct` | int | Horizontal margin of the center (cursor) region, percent of the pad half-width | 25 |
-| `edge-scroll-margin-v-pct` | int | Vertical margin of the center (cursor) region, percent of the pad half-height | 19 |
-| `edge-scroll-segment` | int | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 64 |
-| `edge-scroll-gesture-delay-ms` | int | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 135 |
-| `edge-scroll-gesture-delay-drift` | int | Max movement per axis during the hold-on-edge window, counts | 20 |
-| `session-end-idle-ms` | int | Idle time after the last touch frame before a gesture session ends: runs tap detection and, for cursor sessions, starts the inertial glide | 20 |
-| `sync-rel-xy-ms` | int | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
-| `sync-rel-v-ms` | int | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 1 |
-| `history-len` | int | Number of recent touch samples kept in the history ring; both the inertial glide tick and the launch velocity are derived from this window | 6 |
-| `lift-filter-pct` | int | Detects finger-lift trailing frames: lift-tail samples whose Z fell this percentage below the session Z average (recalculated on the running sample history) are swallowed before movement or gesture detection; rising Z ramps always pass; 0 = disabled | 45 |
-| `inertial-disable` | boolean | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
-| `inertial-decay-pct` | int | Glide velocity decay per tick, percent of velocity passed to the next tick | 93 |
-| `inertial-tick-ms` | int | Fixed glide tick override, ms; 0 = derive the tick from the sample history and clamp it with `inertial-tick-min-ms`/`inertial-tick-max-ms` | 0 |
-| `inertial-tick-min-ms` | int | Lower clamp bound for the glide tick derived from the sample history, ms | 4 |
-| `inertial-tick-max-ms` | int | Upper clamp bound for the glide tick derived from the sample history, ms | 40 |
-| `inertial-glide-max-ms` | int | Fail-safe cap on a single inertial glide, ms, so a glide can never run forever | 2950 |
-| `inertial-velocity-cap` | int | Sanity cap on the launch velocity of an inertial glide, counts/s | 16384 |
-| `inertial-start-velocity` | int | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |
-| `feedback-tap-drag-gpios` | phandle-array | Haptic feedback GPIO pin for the button press when a tap-drag engages | (none) |
-| `feedback-tap-drag-ms` | int | Duration of the tap-drag haptic feedback pulse, ms | 5 |
-| `feedback-edge-scroll-start-gpios` | phandle-array | Haptic feedback GPIO pin for the start of edge-scroll; pin driven high while the pulse plays | (none) |
-| `feedback-edge-scroll-start-ms` | int | Duration of the scroll-start haptic pulse, ms | 5 |
-| `feedback-edge-scroll-trigger-gpios` | phandle-array | Haptic feedback GPIO pin for edge-scroll wheel output | (none) |
-| `feedback-edge-scroll-trigger-ms` | int | Duration of the segment-crossing haptic pulse, ms | 2 |
-| `feedback-glide-gpios` | phandle-array | Haptic feedback GPIO pin for cursor output | (none) |
-| `feedback-glide-ms` | int | Duration of the cursor haptic pulse, ms | 2 |
-| `feedback-glide-interval-ms` | int | Min interval between two cursor haptic feedback pulses, ms; 0 = no throttling | 25 |
+| Property | Type | Range | Description | Default |
+|----------|------|-------|-------------|---------|
+| `abs-center-x` | int | — | Circle center of the touchpad coordinates, x-axis | 1024 |
+| `abs-center-y` | int | — | Circle center of the touchpad coordinates, y-axis | 768 |
+| `primary-tap-disable` | boolean | — | Disable primary tap detection | n (tap enabled) |
+| `secondary-tap-disable` | boolean | — | Disable secondary tap detection (tap on the edge-scroll ring as mouse right click, depends on primary tap) | n (tap enabled) |
+| `tap-max-ms` | int | [1, 1000] | Max gesture duration for tap detection, ms; shorter gestures click instead of dragging or coasting | 120 |
+| `tap-max-drift` | int | [0, 50] | Max gesture movement per axis for tap detection, counts | 25 |
+| `tap-drag-disable` | boolean | — | Disable the tap-drag gesture (a fast tap + swift re-touch that holds on the spot engages a drag: the mouse button presses once the hold window elapses; a quick lift completes the next click) | n (enabled) |
+| `tap-drag-window-ms` | int | [1, 1000] | Max time between an armed tap and its re-touch, ms; retouches after this window are plain touches again | 200 |
+| `tap-drag-drift` | int | [0, 50] | Max per-axis offset between an armed tap position and its re-touch, counts; the re-touch must also stay within this offset for the hold window to switch into a drag | 70 |
+| `tap-drag-hold-start-ms` | int | [0, 1000] | Hold window after the re-touch, ms; staying on the armed spot this long presses the button, switches into a drag and fires the haptic pulse; lifting earlier stays a plain click (should be recognised as double click from host) | 200 |
+| `edge-scroll-margin-h-pct` | int | [0, 100] | Horizontal margin of the center (cursor) region, percent of the pad half-width | 25 |
+| `edge-scroll-margin-v-pct` | int | [0, 100] | Vertical margin of the center (cursor) region, percent of the pad half-height | 19 |
+| `edge-scroll-segment` | int | [0, 360] | Number of angular segments the edge-scroll ring is split into; crossing a boundary emits one wheel tick; < 2 falls back to a simple swipe up/down heuristic | 64 |
+| `edge-scroll-gesture-delay-ms` | int | [0, 1000] | Hold-on-edge delay before an edge touch qualifies as a scroll gesture, ms; 0 = no hold, scroll starts immediately | 135 |
+| `edge-scroll-gesture-delay-drift` | int | [0, 50] | Max movement per axis during the hold-on-edge window, counts | 20 |
+| `session-end-idle-ms` | int | [1, 1000] | Idle time after the last touch frame before a gesture session ends: runs tap detection and, for cursor sessions, starts the inertial glide | 20 |
+| `sync-rel-xy-ms` | int | [0, 1000] | Rate limit for emitting accumulated REL_X/REL_Y cursor deltas, ms | 1 |
+| `sync-rel-v-ms` | int | [0, 1000] | Rate limit for emitting accumulated REL_WHEEL scroll ticks, ms | 1 |
+| `history-len` | int | — | Number of recent touch samples kept in the history ring; both the inertial glide tick and the launch velocity are derived from this window | 6 |
+| `lift-filter-pct` | int | [0, 100] | Detects finger-lift trailing frames: lift-tail samples whose Z fell this percentage below the session Z average (recalculated on the running sample history) are swallowed before movement or gesture detection; rising Z ramps always pass; 0 = disabled | 45 |
+| `inertial-disable` | boolean | — | Disable inertial cursor motion (flick then coast) | n (glide enabled) |
+| `inertial-decay-pct` | int | [0, 100] | Glide velocity decay per tick, percent of velocity passed to the next tick | 93 |
+| `inertial-tick-ms` | int | [0, 1000] | Fixed glide tick override, ms; 0 = derive the tick from the sample history and clamp it with `inertial-tick-min-ms`/`inertial-tick-max-ms` | 0 |
+| `inertial-tick-min-ms` | int | [1, 1000] | Lower clamp bound for the glide tick derived from the sample history, ms | 4 |
+| `inertial-tick-max-ms` | int | [1, 1000] | Upper clamp bound for the glide tick derived from the sample history, ms | 40 |
+| `inertial-glide-max-ms` | int | [1, 10000] | Fail-safe cap on a single inertial glide, ms, so a glide can never run forever | 2950 |
+| `inertial-velocity-cap` | int | [0, 1000000] | Sanity cap on the launch velocity of an inertial glide, counts/s | 16384 |
+| `inertial-start-velocity` | int | [0, 4096] | Minimum release velocity to start coasting, counts/s; 0 = coast on every non-tap release | 500 |
+| `feedback-tap-drag-gpios` | phandle-array | — | Haptic feedback GPIO pin for the button press when a tap-drag engages | (none) |
+| `feedback-tap-drag-ms` | int | [1, 1000] | Duration of the tap-drag haptic feedback pulse, ms | 5 |
+| `feedback-edge-scroll-start-gpios` | phandle-array | — | Haptic feedback GPIO pin for the start of edge-scroll; pin driven high while the pulse plays | (none) |
+| `feedback-edge-scroll-start-ms` | int | [1, 1000] | Duration of the scroll-start haptic pulse, ms | 5 |
+| `feedback-edge-scroll-trigger-gpios` | phandle-array | — | Haptic feedback GPIO pin for edge-scroll wheel output | (none) |
+| `feedback-edge-scroll-trigger-ms` | int | [1, 1000] | Duration of the segment-crossing haptic pulse, ms | 2 |
+| `feedback-glide-gpios` | phandle-array | — | Haptic feedback GPIO pin for cursor output | (none) |
+| `feedback-glide-ms` | int | [1, 1000] | Duration of the cursor haptic pulse, ms | 2 |
+| `feedback-glide-interval-ms` | int | [0, 1000] | Min interval between two cursor haptic feedback pulses, ms; 0 = no throttling | 25 |
 
 ## Runtime Attributes
 
@@ -282,21 +282,21 @@ built when a `zmk,behavior-sensor-attr-cycle` node exists.
             compatible = "zmk,behavior-sensor-attr-cycle";
             #binding-cells = <1>;
             sensor_device = <&zip_cirque_setter>;
-            attr = <ZIP_CIRQUE_ATTR_INERTIAL_ENABLE>;
+            attr = <ZCA(INERTIAL_ENABLE)>;
             values = <1 0>;
         };
         cirque_scroll_trigger_haptic: cirque_scroll_trigger_haptic {
             compatible = "zmk,behavior-sensor-attr-cycle";
             #binding-cells = <1>;
             sensor_device = <&zip_cirque_setter>;
-            attr = <ZIP_CIRQUE_ATTR_FEEDBACK_EDGE_SCROLL_TRIGGER_ENABLE>;
+            attr = <ZCA(FEEDBACK_EDGE_SCROLL_TRIGGER_ENABLE)>;
             values = <1 0>;
         };
         cirque_inertial_decay: cirque_inertial_decay {
             compatible = "zmk,behavior-sensor-attr-cycle";
             #binding-cells = <1>;
             sensor_device = <&zip_cirque_setter>;
-            attr = <ZIP_CIRQUE_ATTR_INERTIAL_DECAY_PCT>;
+            attr = <ZCA(INERTIAL_DECAY_PCT)>;
             values = <100 97 93 90 85 80>;
         };
     };
